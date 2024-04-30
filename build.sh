@@ -1,3 +1,3 @@
 
-clang -std=c99 -pedantic -Wall -Werror -o lisp lisp.c
+clang -std=c99 -pedantic -Wall -Werror -fsanitize=address,undefined -o lisp lisp.c
 
