@@ -2,8 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "lisp.h"
+
+static void prompt(void)
+{
+	if (isatty(fileno(stdin))) {
+		printf("> ");
+	}
+}
 
 static void repl(void)
 {
@@ -13,7 +21,7 @@ static void repl(void)
 	size_t i, num_bytes;
 	const char *s;
 
-	printf("> ");
+	prompt();
 	lisp_init(&lisp);
 
 	while (1) {
@@ -33,13 +41,15 @@ static void repl(void)
 				if (has_error) {
 					puts("BAD");
 				}
-				printf("> ");
+				prompt();
 				lisp_reset(&lisp);
 			}
 		} while (i < num_bytes);
 	}
 
-	puts("");
+	if (isatty(fileno(stdin))) {
+		puts("");
+	}
 	puts("BYE");
 }
 
