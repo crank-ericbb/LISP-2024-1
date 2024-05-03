@@ -1,70 +1,50 @@
 
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 
-void repl(void)
+#include "lisp.h"
+
+void lisp_init(struct lisp *lisp)
 {
-    int ret, c, count, has_overflow, has_underflow, has_error;
-
-    do {
-
-        fputs("> ", stdout);
-
-        count = 0;
-        has_overflow = 0;
-        has_underflow = 0;
-
-        do {
-            ret = fgetc(stdin);
-            if (ret == EOF) {
-                c = '\n';
-            }
-            if (ret != EOF) {
-                c = ret;
-                if (!has_underflow && !has_overflow) {
-                    if (c == '(') {
-                        if (count == INT_MAX) {
-                            has_overflow = 1;
-                        }
-                        if (count < INT_MAX) {
-                            count++;
-                        }
-                    }
-                    if (c == ')') {
-                        if (count == 0) {
-                            has_underflow = 1;
-                        }
-                        if (count > 0) {
-                            count--;
-                        }
-                    }
-                }
-            }
-        } while (c != '\n');
-
-        if (ret != EOF) {
-            has_error = has_underflow || has_overflow || count > 0;
-            if (!has_error) {
-                puts("GOOD");
-            }
-            if (has_error) {
-                puts("BAD");
-            }
-        }
-
-    } while (ret != EOF);
-
-    puts("");
-    puts("BYE");
+	lisp->state = LISP_STATE_READING;
+	lisp->has_underflow = 0;
+	lisp->has_overflow = 0;
+	lisp->count = 0;
 }
 
-int main(int argc, char **argv)
+size_t lisp_read_bytes(struct lisp *lisp, size_t num_bytes, const char *bytes)
 {
-    if (argc == 1) {
-        repl();
-    }
+	size_t i;
 
-    return 0;
+	for (i = 0; i < num_bytes && lisp->state == LISP_STATE_READING; i++) {
+		if (bytes[i] == '\n') {
+			lisp->state = LISP_STATE_WAITING;
+		}
+		if (bytes[i] == '(') {
+			if (lisp->count == INT_MAX) {
+				lisp->has_overflow = 1;
+			}
+			if (lisp->count < INT_MAX) {
+				lisp->count++;
+			}
+		}
+		if (bytes[i] == ')') {
+			if (lisp->count == 0) {
+				lisp->has_underflow = 1;
+			}
+			if (lisp->count > 0) {
+				lisp->count--;
+			}
+		}
+	}
+
+	return i;
 }
 
+void lisp_reset(struct lisp *lisp)
+{
+	lisp->state = LISP_STATE_READING;
+	lisp->has_underflow = 0;
+	lisp->has_overflow = 0;
+	lisp->count = 0;
+}
